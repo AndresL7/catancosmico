@@ -1,0 +1,42 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  color: #ffffff;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+#root {
+  width: 100%;
+  min-height: 100vh;
+}
+
+/* Estilos para los hexágonos estilo panal */
+.hex-container {
+  display: inline-block;
+  margin: 0;
+  padding: 0;
+}
+
+.hex-container svg {
+  display: block;
+}
+
+/* Animación para el agujero negro */
+@keyframes pulse-glow {
+  0%, 100% {
+    filter: drop-shadow(0 0 5px rgba(168, 85, 247, 0.5));
+  }
+  50% {
+    filter: drop-shadow(0 0 15px rgba(168, 85, 247, 0.8));
+  }
+}
