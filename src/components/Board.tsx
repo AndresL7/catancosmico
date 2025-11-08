@@ -8,7 +8,7 @@ import { useGameStore } from '../state/gameStore';
  * Componente que renderiza el tablero completo de hexágonos estilo panal de abejas
  */
 export const Board: React.FC = () => {
-  const { board, vertices, edges, phase, moveBlackHole, placeGalaxy, placeFilament, undoLastPlacement, players, currentPlayerIndex, movingBlackHole, confirmBlackHoleMove } = useGameStore();
+  const { board, vertices, edges, phase, moveBlackHole, placeGalaxy, placeFilament, undoLastPlacement, players, currentPlayerIndex, movingBlackHole, confirmBlackHoleMove, upgradingToCluster, upgradeGalaxyToCluster, placingGalaxy, placingFilament } = useGameStore();
 
   const handleHexClick = (hexId: number) => {
     // Permitir mover el agujero negro cuando sale un 7 O cuando se está usando una carta de pozo gravitacional
@@ -98,9 +98,21 @@ export const Board: React.FC = () => {
             ? players.find((p) => p.id === vertex.playerId)?.color
             : undefined;
           
-          // Los vértices son clicables en fase de setup-galaxy O en fase building
+          // Los vértices son clicables en:
+          // 1. Fase de setup para galaxias
+          // 2. Modo de colocación de galaxia (después de hacer clic en el botón)
+          // 3. Modo de mejora a cúmulo (solo galaxias propias)
           const isClickable = (isSetupPhase && isGalaxyPhase && !vertex.occupied) || 
-                             (phase === 'building' && !vertex.occupied);
+                             (placingGalaxy && !vertex.occupied) ||
+                             (upgradingToCluster && vertex.playerId === currentPlayer.id && vertex.buildingType === 'galaxy');
+          
+          const handleVertexClick = () => {
+            if (upgradingToCluster) {
+              upgradeGalaxyToCluster(vertex.id);
+            } else {
+              placeGalaxy(vertex.id);
+            }
+          };
           
           return (
             <div
@@ -118,7 +130,8 @@ export const Board: React.FC = () => {
                 vertex={vertex}
                 playerColor={playerColor}
                 isClickable={isClickable}
-                onClick={() => placeGalaxy(vertex.id)}
+                onClick={handleVertexClick}
+                isUpgradeMode={upgradingToCluster}
               />
             </div>
           );
@@ -130,9 +143,11 @@ export const Board: React.FC = () => {
             ? players.find((p) => p.id === edge.playerId)?.color
             : undefined;
           
-          // Las aristas son clicables en fase de setup-filament O en fase building
+          // Las aristas son clicables en:
+          // 1. Fase de setup para filamentos
+          // 2. Modo de colocación de filamento (después de hacer clic en el botón)
           const isClickable = (isSetupPhase && isFilamentPhase && !edge.occupied) || 
-                             (phase === 'building' && !edge.occupied);
+                             (placingFilament && !edge.occupied);
           
           return (
             <div

@@ -66,6 +66,13 @@ interface GameStore extends GameState {
   confirmInventionResources: (resource1: ResourceType, resource2: ResourceType) => void;
   cancelInventionSelection: () => void;
   playRoadBuildingCard: () => void;
+  upgradeGalaxyToCluster: (vertexId: string) => void;
+  cancelClusterUpgrade: () => void;
+  closeTutorial: () => void;
+  startPlacingGalaxy: () => void;
+  cancelPlacingGalaxy: () => void;
+  startPlacingFilament: () => void;
+  cancelPlacingFilament: () => void;
 }
 
 const board = generateBoard();
@@ -93,6 +100,10 @@ const initialState: GameState = {
   selectingInventionResources: false,
   buildingFreeRoads: 0,
   victoryPointsToWin: 10,
+  upgradingToCluster: false,
+  showTutorial: true,
+  placingGalaxy: false,
+  placingFilament: false,
 };
 
 export const useGameStore = create<GameStore>((set, get) => ({
@@ -218,53 +229,81 @@ export const useGameStore = create<GameStore>((set, get) => ({
       
       const buildCosts = {
         'filament': '• 1 Materia Oscura\n• 1 Gas',
-        'galaxy': '• 1 Materia Oscura\n• 1 Gas\n• 1 Polvo Cósmico\n• 1 Energía',
-        'cluster': '• 3 Polvo Cósmico\n• 2 Estrellas',
-        'discovery': '• 1 Polvo Cósmico\n• 1 Energía\n• 1 Estrella'
+        'galaxy': '• 1 Materia Oscura\n• 1 Gas\n• 1 Polvo\n• 1 Energía',
+        'cluster': '• 2 Materia Oscura\n• 1 Polvo\n• 1 Gas\n• 1 Estrella',
+        'discovery': '• 1 Polvo\n• 1 Energía\n• 1 Estrella'
       };
       
       alert(`❌ No tienes suficientes recursos para construir ${buildNames[buildType]}.\n\nNecesitas:\n${buildCosts[buildType]}`);
       return;
     }
 
-    // Reproducir sonido de construcción
-    playBuildSound();
+    // Si es galaxia, activar modo de colocación
+    if (buildType === 'galaxy') {
+      playBuildSound();
+      set({ placingGalaxy: true });
+      return;
+    }
 
-    // Deducir recursos
-    const newResources = deductResources(currentPlayer.resources, buildType);
+    // Si es filamento, activar modo de colocación
+    if (buildType === 'filament') {
+      playBuildSound();
+      set({ placingFilament: true });
+      return;
+    }
 
-    // Actualizar edificios
-    const newBuildings = { ...currentPlayer.buildings };
-    if (buildType === 'filament') newBuildings.filaments++;
-    else if (buildType === 'galaxy') newBuildings.galaxies++;
-    else if (buildType === 'cluster') newBuildings.clusters++;
-    else if (buildType === 'discovery') newBuildings.discoveries++;
+    // Si es cúmulo, verificar que tenga al menos una galaxia para mejorar
+    if (buildType === 'cluster') {
+      if (currentPlayer.buildings.galaxies === 0) {
+        playErrorSound();
+        alert('❌ No tienes galaxias para mejorar a cúmulo.\n\nPrimero debes construir una galaxia.');
+        return;
+      }
+      
+      // Activar modo de selección de galaxia
+      playBuildSound();
+      set({ upgradingToCluster: true });
+      return;
+    }
 
-    // Actualizar jugador
-    const updatedPlayers = [...players];
-    updatedPlayers[currentPlayerIndex] = {
-      ...currentPlayer,
-      resources: newResources,
-      buildings: newBuildings,
-      victoryPoints: calculateVictoryPoints({
+    // Solo para cartas de descubrimiento (compra directa)
+    if (buildType === 'discovery') {
+      // Reproducir sonido de construcción
+      playBuildSound();
+
+      // Deducir recursos
+      const newResources = deductResources(currentPlayer.resources, buildType);
+
+      // Actualizar edificios
+      const newBuildings = { ...currentPlayer.buildings };
+      newBuildings.discoveries++;
+
+      // Actualizar jugador
+      const updatedPlayers = [...players];
+      updatedPlayers[currentPlayerIndex] = {
         ...currentPlayer,
+        resources: newResources,
         buildings: newBuildings,
-      }),
-    };
+        victoryPoints: calculateVictoryPoints({
+          ...currentPlayer,
+          buildings: newBuildings,
+        }),
+      };
 
-    // Verificar ganador
-    const winner = updatedPlayers.find(
-      (p) => p.victoryPoints >= get().victoryPointsToWin
-    );
+      // Verificar ganador
+      const winner = updatedPlayers.find(
+        (p) => p.victoryPoints >= get().victoryPointsToWin
+      );
 
-    const newState = {
-      players: updatedPlayers,
-      winner: winner ? winner.id : null,
-      phase: winner ? ('ended' as const) : get().phase,
-    };
+      const newState = {
+        players: updatedPlayers,
+        winner: winner ? winner.id : null,
+        phase: winner ? ('ended' as const) : get().phase,
+      };
 
-    set(newState);
-    saveGameState({ ...get(), ...newState });
+      set(newState);
+      saveGameState({ ...get(), ...newState });
+    }
   },
 
   /**
@@ -290,6 +329,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
    * Inicia un nuevo juego
    */
   newGame: (numberOfPlayers = 4, victoryPoints = 10) => {
+    console.log('🎮 Iniciando nuevo juego con', numberOfPlayers, 'jugadores');
     playClickSound();
     clearGameState();
     const newBoard = generateBoard();
@@ -303,6 +343,13 @@ export const useGameStore = create<GameStore>((set, get) => ({
       placedFilaments: [] 
     }));
     
+    console.log('✅ Tablero generado:', { 
+      hexagons: newBoard.length, 
+      vertices: newVertices.length, 
+      edges: newEdges.length,
+      players: selectedPlayers.length 
+    });
+    
     const newState = {
       ...initialState,
       board: newBoard,
@@ -310,9 +357,14 @@ export const useGameStore = create<GameStore>((set, get) => ({
       edges: newEdges,
       players: selectedPlayers,
       victoryPointsToWin: victoryPoints,
+      discoveryDeck: createShuffledDiscoveryDeck(), // Regenerar mazo de cartas
+      discardedDiscoveryCards: [], // Reiniciar cartas descartadas
     };
+    
+    console.log('🎲 Estado del juego creado:', newState.phase);
     set(newState);
     saveGameState(newState);
+    console.log('💾 Juego guardado');
   },
 
   /**
@@ -400,6 +452,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       const newState = {
         vertices: updatedVertices,
         players: updatedPlayers,
+        placingGalaxy: false, // Desactivar modo de colocación
       };
       
       set(newState);
@@ -509,17 +562,11 @@ export const useGameStore = create<GameStore>((set, get) => ({
           edges: updatedEdges,
           players: updatedPlayers,
           buildingFreeRoads: buildingFreeRoads - 1,
+          placingFilament: buildingFreeRoads - 1 > 0, // Mantener activo si quedan filamentos por construir
         };
         
         set(newState);
         saveGameState({ ...get(), ...newState });
-        
-        // Mensaje de progreso
-        if (buildingFreeRoads - 1 > 0) {
-          alert(`🛣️ Filamento construido gratis!\n\nTe quedan ${buildingFreeRoads - 1} filamentos por construir.`);
-        } else {
-          alert('🛣️ ¡Constructor de Filamentos completado!\n\nAmbos filamentos han sido construidos.');
-        }
         return;
       }
       
@@ -559,6 +606,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       const newState = {
         edges: updatedEdges,
         players: updatedPlayers,
+        placingFilament: false, // Desactivar modo de colocación
       };
       
       set(newState);
@@ -1281,5 +1329,127 @@ export const useGameStore = create<GameStore>((set, get) => ({
     saveGameState(newState);
     
     alert('🛣️ Constructor de Filamentos activado!\n\nPuedes construir 2 filamentos gratis.\nHaz clic en las aristas del tablero.');
+  },
+
+  /**
+   * Mejora una galaxia a cúmulo
+   */
+  upgradeGalaxyToCluster: (vertexId: string) => {
+    const state = get();
+    const currentPlayer = state.players[state.currentPlayerIndex];
+    
+    // Verificar que el vértice tenga una galaxia del jugador actual
+    const vertex = state.vertices.find(v => v.id === vertexId);
+    if (!vertex || vertex.playerId !== currentPlayer.id || vertex.buildingType !== 'galaxy') {
+      playErrorSound();
+      alert('❌ Debes seleccionar una de tus galaxias.');
+      return;
+    }
+
+    // Verificar recursos (por si acaso)
+    if (!canBuild(currentPlayer, 'cluster')) {
+      playErrorSound();
+      alert('❌ No tienes suficientes recursos para construir un Cúmulo.\n\nNecesitas:\n• 2 Materia Oscura\n• 1 Polvo\n• 1 Gas\n• 1 Estrella');
+      set({ upgradingToCluster: false });
+      return;
+    }
+
+    // Deducir recursos
+    const newResources = deductResources(currentPlayer.resources, 'cluster');
+
+    // Actualizar vértice de galaxia a cúmulo
+    const updatedVertices = state.vertices.map(v =>
+      v.id === vertexId
+        ? { ...v, buildingType: 'cluster' as const }
+        : v
+    );
+
+    // Actualizar jugador: -1 galaxia, +1 cúmulo
+    const updatedPlayers = state.players.map(player => {
+      if (player.id === currentPlayer.id) {
+        const updatedPlayer = {
+          ...player,
+          resources: newResources,
+          buildings: {
+            ...player.buildings,
+            galaxies: player.buildings.galaxies - 1,
+            clusters: player.buildings.clusters + 1,
+          },
+        };
+        updatedPlayer.victoryPoints = calculateVictoryPoints(updatedPlayer);
+        return updatedPlayer;
+      }
+      return player;
+    });
+
+    const newState = {
+      ...state,
+      vertices: updatedVertices,
+      players: updatedPlayers,
+      upgradingToCluster: false,
+    };
+
+    set(newState);
+    saveGameState(newState);
+    playBuildSound();
+    alert('✨ ¡Galaxia mejorada a Cúmulo!\n\nAhora este nodo produce el doble de recursos.');
+  },
+
+  /**
+   * Cancela la mejora de cúmulo
+   */
+  cancelClusterUpgrade: () => {
+    set({ upgradingToCluster: false });
+  },
+
+  /**
+   * Cierra el tutorial inicial
+   */
+  closeTutorial: () => {
+    set({ showTutorial: false });
+  },
+
+  /**
+   * Activa el modo de colocación de galaxia
+   */
+  startPlacingGalaxy: () => {
+    const { players, currentPlayerIndex, phase } = get();
+    const currentPlayer = players[currentPlayerIndex];
+
+    // Solo durante fase de juego (no setup)
+    if (!phase.startsWith('setup') && canBuild(currentPlayer, 'galaxy')) {
+      set({ placingGalaxy: true });
+    } else {
+      playErrorSound();
+    }
+  },
+
+  /**
+   * Cancela la colocación de galaxia
+   */
+  cancelPlacingGalaxy: () => {
+    set({ placingGalaxy: false });
+  },
+
+  /**
+   * Activa el modo de colocación de filamento
+   */
+  startPlacingFilament: () => {
+    const { players, currentPlayerIndex, phase } = get();
+    const currentPlayer = players[currentPlayerIndex];
+
+    // Solo durante fase de juego (no setup)
+    if (!phase.startsWith('setup') && canBuild(currentPlayer, 'filament')) {
+      set({ placingFilament: true });
+    } else {
+      playErrorSound();
+    }
+  },
+
+  /**
+   * Cancela la colocación de filamento
+   */
+  cancelPlacingFilament: () => {
+    set({ placingFilament: false });
   },
 }));

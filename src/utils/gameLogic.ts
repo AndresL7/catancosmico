@@ -438,7 +438,11 @@ export function loadGameState(): any | null {
         parsed.selectingMonopolyResource === undefined || 
         parsed.selectingInventionResources === undefined ||
         parsed.buildingFreeRoads === undefined ||
-        parsed.victoryPointsToWin === undefined) {
+        parsed.victoryPointsToWin === undefined ||
+        parsed.upgradingToCluster === undefined ||
+        parsed.showTutorial === undefined ||
+        parsed.placingGalaxy === undefined ||
+        parsed.placingFilament === undefined) {
       console.log('Estado guardado obsoleto, se necesita nuevo juego');
       clearGameState();
       return null;

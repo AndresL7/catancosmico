@@ -13,8 +13,10 @@ export const BUILD_COSTS: BuildCost = {
     'energy': 1,
   },
   cluster: {
-    'dust': 3,
-    'stars': 2,
+    'dark-matter': 2,
+    'dust': 1,
+    'gas': 1,
+    'stars': 1,
   },
   discovery: {
     'dust': 1,
@@ -48,7 +50,7 @@ export const RESOURCE_COLORS: Record<ResourceType | 'desert', string> = {
 export const RESOURCE_NAMES: Record<ResourceType | 'desert', string> = {
   'dark-matter': 'Materia Oscura',
   'gas': 'Gas',
-  'dust': 'Polvo Cósmico',
+  'dust': 'Polvo',
   'energy': 'Energía',
   'stars': 'Estrellas',
   'desert': 'Vacío Espacial',
@@ -121,6 +123,30 @@ export const DEFAULT_PLAYERS = [
     id: 3,
     name: 'Jugador 3',
     color: '#10B981', // Verde
+    resources: {
+      'dark-matter': 0,
+      'gas': 0,
+      'dust': 0,
+      'energy': 0,
+      'stars': 0,
+    },
+    victoryPoints: 0,
+    buildings: {
+      filaments: 0,
+      galaxies: 0,
+      clusters: 0,
+      discoveries: 0,
+    },
+    placedGalaxies: [],
+    placedFilaments: [],
+    discoveryCards: [],
+    playedPozosGravitacionales: 0,
+    hasDominioGravitacional: false,
+  },
+  {
+    id: 4,
+    name: 'Jugador 4',
+    color: '#F59E0B', // Naranja/Amarillo
     resources: {
       'dark-matter': 0,
       'gas': 0,

@@ -2,7 +2,7 @@ import React from 'react';
 import { useGameStore } from '../state/gameStore';
 import { BUILD_COSTS, RESOURCE_NAMES } from '../utils/constants';
 import { canBuild } from '../utils/gameLogic';
-import { Building2, Zap } from 'lucide-react';
+import { Building2, Zap, Circle, Minus } from 'lucide-react';
 import type { BuildingType } from '../types/game';
 
 /**
@@ -19,6 +19,18 @@ export const BuildMenu: React.FC = () => {
     description: string;
   }> = [
     {
+      type: 'galaxy',
+      name: 'Galaxia',
+      icon: Circle,
+      description: 'Colonia estelar (1 punto)',
+    },
+    {
+      type: 'filament',
+      name: 'Filamento',
+      icon: Minus,
+      description: 'Conexión cósmica',
+    },
+    {
       type: 'cluster',
       name: 'Cúmulo',
       icon: Building2,
@@ -31,16 +43,6 @@ export const BuildMenu: React.FC = () => {
       <h3 className="text-xl font-bold mb-4 text-center text-purple-300">
         Menú de Construcción
       </h3>
-
-      {/* Nota sobre construcción en el tablero */}
-      <div className="mb-4 p-3 bg-blue-900/30 border border-blue-500/50 rounded-lg">
-        <p className="text-xs text-blue-300 mb-1">
-          💡 <strong>Galaxias:</strong> Haz clic en una intersección del tablero (costo: 1 polvo + 1 gas + 1 materia oscura + 1 energía)
-        </p>
-        <p className="text-xs text-blue-300">
-          💡 <strong>Filamentos:</strong> Haz clic en una arista del tablero (costo: 1 polvo + 1 gas)
-        </p>
-      </div>
 
       <div className="grid grid-cols-1 gap-3">
         {buildings.map((building) => {

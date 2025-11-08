@@ -9,7 +9,9 @@ import { DiscoveryCardDisplay } from './components/DiscoveryCardDisplay';
 import { BlackHoleMover } from './components/BlackHoleMover';
 import { MonopolySelector } from './components/MonopolySelector';
 import { InventionSelector } from './components/InventionSelector';
+import { Tutorial } from './components/Tutorial';
 import { Rocket, RotateCcw, Trophy, ArrowRight, Users } from 'lucide-react';
+import sparkleSound from './assets/sparkle.mp3';
 
 function App() {
   const {
@@ -24,6 +26,12 @@ function App() {
     endTurn,
     newGame,
     loadGame,
+    upgradingToCluster,
+    cancelClusterUpgrade,
+    placingGalaxy,
+    placingFilament,
+    cancelPlacingGalaxy,
+    cancelPlacingFilament,
   } = useGameStore();
 
   const [showStartScreen, setShowStartScreen] = useState(true);
@@ -34,12 +42,26 @@ function App() {
   useEffect(() => {
     const savedGame = localStorage.getItem('catanCosmico');
     if (savedGame) {
-      loadGame();
-      setShowStartScreen(false);
+      try {
+        const parsed = JSON.parse(savedGame);
+        // Solo ocultar la pantalla de inicio si el juego guardado es válido
+        if (parsed && parsed.players && parsed.board) {
+          loadGame();
+          setShowStartScreen(false);
+        }
+      } catch (error) {
+        console.error('Error al cargar juego:', error);
+        // Si hay error, mostrar pantalla de inicio
+        setShowStartScreen(true);
+      }
     }
   }, [loadGame]);
 
   const startGame = () => {
+    // Reproducir sonido de inicio
+    const audio = new Audio(sparkleSound);
+    audio.play().catch(err => console.log('Error al reproducir sonido:', err));
+    
     newGame(selectedPlayers, selectedVictoryPoints);
     setShowStartScreen(false);
   };
@@ -48,7 +70,7 @@ function App() {
     setShowStartScreen(true);
   };
 
-  const currentPlayer = players[currentPlayerIndex];
+  const currentPlayer = players && players[currentPlayerIndex] ? players[currentPlayerIndex] : null;
   const hasRolled = diceValues[0] > 0 && diceValues[1] > 0;
 
   // Pantalla inicial de selección de jugadores
@@ -208,16 +230,18 @@ function App() {
 
             {/* Info del Turno */}
             <div className="flex flex-col justify-center gap-4 p-6 bg-gradient-to-br from-gray-900/50 to-gray-800/50 rounded-xl border-2 border-gray-700">
-              <div>
-                <h3 className="text-sm text-gray-400 mb-1">Turno de:</h3>
-                <div className="flex items-center gap-2">
-                  <div
-                    className="w-4 h-4 rounded-full"
-                    style={{ backgroundColor: currentPlayer.color }}
-                  />
-                  <span className="text-xl font-bold">{currentPlayer.name}</span>
+              {currentPlayer && (
+                <div>
+                  <h3 className="text-sm text-gray-400 mb-1">Turno de:</h3>
+                  <div className="flex items-center gap-2">
+                    <div
+                      className="w-4 h-4 rounded-full"
+                      style={{ backgroundColor: currentPlayer.color }}
+                    />
+                    <span className="text-xl font-bold">{currentPlayer.name}</span>
+                  </div>
                 </div>
-              </div>
+              )}
 
               <div>
                 <h3 className="text-sm text-gray-400 mb-1">Fase:</h3>
@@ -266,6 +290,72 @@ function App() {
 
       {/* Modal para Invención Galáctica */}
       <InventionSelector />
+
+      {/* Tutorial inicial */}
+      <Tutorial />
+
+      {/* Indicador de modo colocación de galaxia */}
+      {placingGalaxy && (
+        <div className="fixed top-20 left-1/2 transform -translate-x-1/2 z-40">
+          <div className="bg-gradient-to-br from-purple-900 to-blue-900 p-6 rounded-lg shadow-2xl border-4 border-purple-400 animate-pulse">
+            <h2 className="text-white font-bold text-xl mb-2 text-center">
+              ⭐ Colocar Galaxia
+            </h2>
+            <p className="text-purple-200 text-center mb-4 text-sm">
+              Haz clic en un vértice (intersección) del tablero para construir tu galaxia.<br/>
+              Producirá 1 recurso por turno.
+            </p>
+            <button
+              onClick={cancelPlacingGalaxy}
+              className="w-full px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-semibold transition-colors"
+            >
+              Cancelar
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Indicador de modo colocación de filamento */}
+      {placingFilament && (
+        <div className="fixed top-20 left-1/2 transform -translate-x-1/2 z-40">
+          <div className="bg-gradient-to-br from-blue-900 to-cyan-900 p-6 rounded-lg shadow-2xl border-4 border-blue-400 animate-pulse">
+            <h2 className="text-white font-bold text-xl mb-2 text-center">
+              🌟 Colocar Filamento
+            </h2>
+            <p className="text-blue-200 text-center mb-4 text-sm">
+              Haz clic en una arista (línea entre hexágonos) del tablero para construir tu filamento.<br/>
+              Conecta tus galaxias para expandir tu imperio cósmico.
+            </p>
+            <button
+              onClick={cancelPlacingFilament}
+              className="w-full px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-semibold transition-colors"
+            >
+              Cancelar
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Indicador de modo upgrade a cúmulo */}
+      {upgradingToCluster && (
+        <div className="fixed top-20 left-1/2 transform -translate-x-1/2 z-40">
+          <div className="bg-gradient-to-br from-yellow-900 to-orange-900 p-6 rounded-lg shadow-2xl border-4 border-yellow-400 animate-pulse">
+            <h2 className="text-white font-bold text-xl mb-2 text-center">
+              ✨ Mejorar a Cúmulo
+            </h2>
+            <p className="text-yellow-200 text-center mb-4 text-sm">
+              Haz clic en una de tus galaxias (círculos) para mejorarla.<br/>
+              El cúmulo producirá el doble de recursos.
+            </p>
+            <button
+              onClick={cancelClusterUpgrade}
+              className="w-full px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-semibold transition-colors"
+            >
+              Cancelar
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Footer */}
       <footer className="mt-12 text-center text-gray-500 text-sm">

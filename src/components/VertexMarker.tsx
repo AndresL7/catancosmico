@@ -7,6 +7,7 @@ interface VertexMarkerProps {
   playerColor?: string;
   isClickable: boolean;
   onClick: () => void;
+  isUpgradeMode?: boolean;
 }
 
 /**
@@ -17,24 +18,33 @@ export const VertexMarker: React.FC<VertexMarkerProps> = ({
   playerColor,
   isClickable,
   onClick,
+  isUpgradeMode = false,
 }) => {
   if (vertex.occupied) {
     // Mostrar la galaxia o cúmulo construido
     const size = vertex.buildingType === 'cluster' ? 20 : 14;
     const Icon = vertex.buildingType === 'cluster' ? Hexagon : Circle;
     
+    // Si estamos en modo upgrade y esta es una galaxia clickeable, agregar efecto visual
+    const isUpgradeable = isUpgradeMode && isClickable && vertex.buildingType === 'galaxy';
+    
+    // Para cúmulos: usar el color del jugador como relleno
+    // Para galaxias: usar blanco como relleno (diferenciación visual)
+    const fillColor = vertex.buildingType === 'cluster' ? playerColor : 'white';
+    
     return (
       <div
-        className="rounded-full shadow-lg animate-build"
+        className={`rounded-full shadow-lg ${isUpgradeable ? 'animate-pulse cursor-pointer ring-4 ring-yellow-400' : 'animate-build'} ${isUpgradeable ? 'hover:scale-125 transition-transform' : ''}`}
         style={{
           backgroundColor: playerColor,
           padding: '4px',
         }}
+        onClick={isUpgradeable ? onClick : undefined}
       >
         <Icon
           size={size}
           className="text-white"
-          fill="white"
+          fill={fillColor}
           strokeWidth={2}
         />
       </div>

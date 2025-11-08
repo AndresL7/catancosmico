@@ -98,6 +98,10 @@ export interface GameState {
   selectingInventionResources: boolean; // Si se está seleccionando recursos para invención
   buildingFreeRoads: number; // Cuántos filamentos gratis quedan por construir (Constructor de Filamentos)
   victoryPointsToWin: number; // Puntos de victoria necesarios para ganar
+  upgradingToCluster: boolean; // Si se está seleccionando una galaxia para mejorar a cúmulo
+  showTutorial: boolean; // Si se muestra el tutorial inicial
+  placingGalaxy: boolean; // Si se está seleccionando dónde colocar una galaxia
+  placingFilament: boolean; // Si se está seleccionando dónde colocar un filamento
 }
 
 export interface BuildCost {
