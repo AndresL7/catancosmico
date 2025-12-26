@@ -301,18 +301,18 @@ function App() {
 
       {/* Indicador de modo colocación de galaxia */}
       {placingGalaxy && (
-        <div className="fixed top-20 left-1/2 transform -translate-x-1/2 z-40">
-          <div className="bg-gradient-to-br from-purple-900 to-blue-900 p-6 rounded-lg shadow-2xl border-4 border-purple-400 animate-pulse">
-            <h2 className="text-white font-bold text-xl mb-2 text-center">
+        <div className="fixed top-32 left-4 z-40 max-w-xs">
+          <div className="bg-gradient-to-br from-purple-900 to-blue-900 p-4 rounded-lg shadow-2xl border-2 border-purple-400 animate-pulse">
+            <h2 className="text-white font-bold text-lg mb-1 text-center">
               ⭐ Colocar Galaxia
             </h2>
-            <p className="text-purple-200 text-center mb-4 text-sm">
-              Haz clic en un vértice (intersección) del tablero para construir tu galaxia.<br/>
+            <p className="text-purple-200 text-center mb-2 text-xs">
+              Haz clic en un vértice para construir tu galaxia.<br/>
               Producirá 1 recurso por turno.
             </p>
             <button
               onClick={cancelPlacingGalaxy}
-              className="w-full px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-semibold transition-colors"
+              className="w-full px-3 py-1 bg-red-600 hover:bg-red-700 text-white rounded text-sm font-semibold transition-colors"
             >
               Cancelar
             </button>
@@ -322,18 +322,18 @@ function App() {
 
       {/* Indicador de modo colocación de filamento */}
       {placingFilament && (
-        <div className="fixed top-20 left-1/2 transform -translate-x-1/2 z-40">
-          <div className="bg-gradient-to-br from-blue-900 to-cyan-900 p-6 rounded-lg shadow-2xl border-4 border-blue-400 animate-pulse">
-            <h2 className="text-white font-bold text-xl mb-2 text-center">
+        <div className="fixed top-32 left-4 z-40 max-w-xs">
+          <div className="bg-gradient-to-br from-blue-900 to-cyan-900 p-4 rounded-lg shadow-2xl border-2 border-blue-400 animate-pulse">
+            <h2 className="text-white font-bold text-lg mb-1 text-center">
               🌟 Colocar Filamento
             </h2>
-            <p className="text-blue-200 text-center mb-4 text-sm">
-              Haz clic en una arista (línea entre hexágonos) del tablero para construir tu filamento.<br/>
-              Conecta tus galaxias para expandir tu imperio cósmico.
+            <p className="text-blue-200 text-center mb-2 text-xs">
+              Haz clic en una arista para construir tu filamento.<br/>
+              Conecta tus galaxias para expandir tu imperio.
             </p>
             <button
               onClick={cancelPlacingFilament}
-              className="w-full px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-semibold transition-colors"
+              className="w-full px-3 py-1 bg-red-600 hover:bg-red-700 text-white rounded text-sm font-semibold transition-colors"
             >
               Cancelar
             </button>
@@ -343,18 +343,18 @@ function App() {
 
       {/* Indicador de modo upgrade a cúmulo */}
       {upgradingToCluster && (
-        <div className="fixed top-20 left-1/2 transform -translate-x-1/2 z-40">
-          <div className="bg-gradient-to-br from-yellow-900 to-orange-900 p-6 rounded-lg shadow-2xl border-4 border-yellow-400 animate-pulse">
-            <h2 className="text-white font-bold text-xl mb-2 text-center">
+        <div className="fixed top-32 left-4 z-40 max-w-xs">
+          <div className="bg-gradient-to-br from-yellow-900 to-orange-900 p-4 rounded-lg shadow-2xl border-2 border-yellow-400 animate-pulse">
+            <h2 className="text-white font-bold text-lg mb-1 text-center">
               ✨ Mejorar a Cúmulo
             </h2>
-            <p className="text-yellow-200 text-center mb-4 text-sm">
-              Haz clic en una de tus galaxias (círculos) para mejorarla.<br/>
+            <p className="text-yellow-200 text-center mb-2 text-xs">
+              Haz clic en una de tus galaxias para mejorarla.<br/>
               El cúmulo producirá el doble de recursos.
             </p>
             <button
               onClick={cancelClusterUpgrade}
-              className="w-full px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-semibold transition-colors"
+              className="w-full px-3 py-1 bg-red-600 hover:bg-red-700 text-white rounded text-sm font-semibold transition-colors"
             >
               Cancelar
             </button>
