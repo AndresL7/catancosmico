@@ -203,7 +203,7 @@ export const DISCOVERY_CARDS: DiscoveryCard[] = [
   { id: 21, name: 'Biblioteca Galáctica', type: 'descubrimiento', description: 'Has descubierto una antigua biblioteca con conocimiento ancestral.', victoryPoints: 1 },
   { id: 22, name: 'Nebulosa Antigua', type: 'descubrimiento', description: 'Has cartografiado una nebulosa de importancia histórica.', victoryPoints: 1 },
   { id: 23, name: 'Portal Estelar', type: 'descubrimiento', description: 'Has activado un portal que conecta galaxias distantes.', victoryPoints: 1 },
-  { id: 24, name: 'Civilización Perdida', type: 'descubrimiento', description: 'Has encontrado evidencia de una civilización desaparecida.', victoryPoints: 1 },
+  { id: 24, name: 'Exoplaneta Habitable', type: 'descubrimiento', description: 'Has encontrado un exoplaneta en la zona de habitabilidad', victoryPoints: 1 },
   { id: 25, name: 'Anomalía Temporal', type: 'descubrimiento', description: 'Has estudiado una rara anomalía en el espacio-tiempo.', victoryPoints: 1 },
 ];
 

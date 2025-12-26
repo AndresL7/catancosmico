@@ -19,15 +19,15 @@ const DiceIcon = ({ value }: { value: number }) => {
  */
 export const Dice: React.FC<DiceProps> = ({ onRoll, values, disabled }) => {
   const [rolling, setRolling] = useState(false);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-
   const handleRoll = () => {
     if (disabled || rolling) return;
 
     // Reproducir sonido de dados
-    if (audioRef.current) {
-      audioRef.current.currentTime = 0;
-      audioRef.current.play().catch(err => console.log('Error al reproducir sonido:', err));
+    try {
+      const audio = new Audio(diceSound);
+      audio.play().catch(err => console.log('Error al reproducir sonido:', err));
+    } catch (error) {
+      console.error('Error al inicializar audio:', error);
     }
 
     setRolling(true);
@@ -41,8 +41,6 @@ export const Dice: React.FC<DiceProps> = ({ onRoll, values, disabled }) => {
 
   return (
     <div className="flex flex-col items-center gap-4 p-6 bg-gradient-to-br from-purple-900/50 to-blue-900/50 rounded-xl border-2 border-purple-500/30">
-      {/* Audio oculto para el sonido de los dados */}
-      <audio ref={audioRef} src={diceSound} preload="auto" />
       
       <h3 className="text-lg font-bold text-purple-300 flex items-center gap-2">
         <Sparkles className="w-5 h-5" />
