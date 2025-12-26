@@ -43,7 +43,7 @@ export const EdgeMarker: React.FC<EdgeMarkerProps> = ({
     // Mostrar el filamento construido
     return (
       <div
-        className="w-1 h-12 rounded-full shadow-lg animate-build"
+        className="w-2 h-[70px] rounded-full shadow-lg animate-build"
         style={{
           backgroundColor: playerColor,
           transform: `rotate(${rotation}deg)`,
@@ -61,7 +61,7 @@ export const EdgeMarker: React.FC<EdgeMarkerProps> = ({
       onClick={onClick}
     >
       <div
-        className="w-2 h-12 bg-blue-400/70 rounded-full border-2 border-blue-300 group-hover:bg-blue-300 group-hover:w-3 transition-all duration-200 shadow-lg"
+        className="w-3 h-[70px] bg-blue-400/70 rounded-full border-2 border-blue-300 group-hover:bg-blue-300 group-hover:w-4 transition-all duration-200 shadow-lg"
         style={{
           transform: `rotate(${rotation}deg)`,
         }}

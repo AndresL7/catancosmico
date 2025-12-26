@@ -1,5 +1,113 @@
-import type { HexTile, Player, Resources, ResourceType, Vertex, Edge } from '../types/game';
+import type { HexTile, Player, Resources, ResourceType, Vertex, Edge, Port } from '../types/game';
 import { BOARD_DISTRIBUTION, DICE_NUMBERS, BUILD_COSTS, VICTORY_POINTS } from './constants';
+
+/**
+ * Genera los puertos (agujeros de gusano) en los bordes del tablero
+ */
+export function generatePorts(edges: Edge[], vertices: Vertex[]): Port[] {
+  // 1. Identificar aristas de borde (solo tocan 1 hexágono)
+  const borderEdges = edges.filter(e => e.hexIds.length === 1);
+  
+  if (borderEdges.length === 0) return [];
+
+  // 2. Calcular el centro del tablero para ordenar las aristas angularmente
+  const centerX = borderEdges.reduce((sum, e) => sum + e.position.x, 0) / borderEdges.length;
+  const centerY = borderEdges.reduce((sum, e) => sum + e.position.y, 0) / borderEdges.length;
+  
+  // 3. Ordenar aristas por ángulo
+  const sortedEdges = borderEdges.sort((a, b) => {
+    const angleA = Math.atan2(a.position.y - centerY, a.position.x - centerX);
+    const angleB = Math.atan2(b.position.y - centerY, b.position.x - centerX);
+    return angleA - angleB;
+  });
+  
+  // 4. Definir tipos de puertos disponibles
+  const portTypes: { type: 'generic' | 'specialized', resource?: ResourceType }[] = [
+    { type: 'generic' },
+    { type: 'specialized', resource: 'gas' },
+    { type: 'specialized', resource: 'dark-matter' },
+    { type: 'generic' },
+    { type: 'specialized', resource: 'dust' },
+    { type: 'specialized', resource: 'energy' },
+    { type: 'generic' },
+    { type: 'specialized', resource: 'stars' },
+    { type: 'generic' },
+  ];
+  
+  // Mezclar tipos de puertos aleatoriamente
+  for (let i = portTypes.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [portTypes[i], portTypes[j]] = [portTypes[j], portTypes[i]];
+  }
+  
+  const ports: Port[] = [];
+  
+  // 5. Seleccionar aristas espaciadas para colocar los puertos
+  // Queremos 9 puertos distribuidos lo más uniformemente posible
+  const step = Math.floor(sortedEdges.length / 9);
+  
+  for (let i = 0; i < 9; i++) {
+    // Usamos un offset para variar la posición inicial en cada juego si quisiéramos, 
+    // pero por ahora fijo para asegurar distribución
+    const edgeIndex = Math.floor(i * step + step / 2) % sortedEdges.length;
+    const edge = sortedEdges[edgeIndex];
+    const portType = portTypes[i];
+    
+    // Calcular rotación hacia el centro
+    // Usamos la perpendicular a la arista para asegurar que el triángulo se alinee perfectamente
+    let angleRad = Math.atan2(centerY - edge.position.y, centerX - edge.position.x);
+    
+    // Buscar los vértices de la arista para calcular la perpendicular exacta
+    const v1 = vertices.find(v => v.id === edge.vertexIds[0]);
+    const v2 = vertices.find(v => v.id === edge.vertexIds[1]);
+    
+    if (v1 && v2) {
+      // Vector de la arista
+      const dx = v2.position.x - v1.position.x;
+      const dy = v2.position.y - v1.position.y;
+      
+      // Vector hacia el centro aproximado
+      const toCenterX = centerX - edge.position.x;
+      const toCenterY = centerY - edge.position.y;
+      
+      // Normales posibles (-dy, dx) y (dy, -dx)
+      // Elegimos la que apunte hacia el centro (producto punto > 0)
+      const n1x = -dy;
+      const n1y = dx;
+      
+      const dot = n1x * toCenterX + n1y * toCenterY;
+      
+      if (dot > 0) {
+        angleRad = Math.atan2(n1y, n1x);
+      } else {
+        angleRad = Math.atan2(-n1y, -n1x);
+      }
+    }
+
+    const angleDeg = (angleRad * 180 / Math.PI);
+    
+    // Calcular posición desplazada hacia afuera para que no se solape con los filamentos
+    // El triángulo tendrá una altura de 50px. Desplazamos la mitad para que la base toque la arista.
+    const offsetDistance = 25; 
+    const offsetX = -Math.cos(angleRad) * offsetDistance;
+    const offsetY = -Math.sin(angleRad) * offsetDistance;
+    
+    ports.push({
+      id: `port-${i}`,
+      type: portType.type,
+      resource: portType.resource,
+      vertexIds: edge.vertexIds,
+      position: {
+        x: edge.position.x + offsetX,
+        y: edge.position.y + offsetY
+      },
+      rotation: angleDeg
+    });
+  }
+  
+  console.log(`⚓ Generados ${ports.length} puertos espaciales`);
+  return ports;
+}
 
 /**
  * Genera los vértices (intersecciones) del tablero
@@ -407,8 +515,75 @@ export function calculateVictoryPoints(player: Player): number {
   if (player.hasDominioGravitacional) {
     points += 2;
   }
+
+  // Puntos por Cadena Filamentar Más Larga
+  if (player.hasLongestChain) {
+    points += 2;
+  }
   
   return points;
+}
+
+/**
+ * Calcula la longitud de la cadena filamentar más larga de un jugador
+ */
+export function calculateLongestChainLength(playerId: number, edges: Edge[], vertices: Vertex[]): number {
+  // 1. Obtener todos los filamentos del jugador
+  const playerEdges = edges.filter(e => e.occupied && e.playerId === playerId);
+  if (playerEdges.length === 0) return 0;
+
+  // 2. Construir grafo de adyacencia
+  // Mapa: vertexId -> lista de edgeIds conectados
+  const adj: Record<string, string[]> = {};
+  
+  playerEdges.forEach(edge => {
+    edge.vertexIds.forEach(vId => {
+      if (!adj[vId]) adj[vId] = [];
+      adj[vId].push(edge.id);
+    });
+  });
+
+  let maxPath = 0;
+
+  // 3. DFS para encontrar el camino más largo
+  const findMaxPath = (currentVertexId: string, visitedEdgeIds: Set<string>, currentLength: number) => {
+    maxPath = Math.max(maxPath, currentLength);
+
+    // Verificar si el vértice actual rompe la cadena (edificio enemigo)
+    // Solo importa si ya hemos recorrido camino (no es el punto de inicio)
+    if (currentLength > 0) {
+      const vertex = vertices.find(v => v.id === currentVertexId);
+      if (vertex?.occupied && vertex?.playerId !== playerId) {
+        return; // Camino bloqueado, no podemos continuar a través de este vértice
+      }
+    }
+
+    // Obtener aristas conectadas a este vértice
+    const connectedEdgeIds = adj[currentVertexId] || [];
+
+    connectedEdgeIds.forEach(edgeId => {
+      if (!visitedEdgeIds.has(edgeId)) {
+        // Encontrar el otro vértice de esta arista
+        const edge = playerEdges.find(e => e.id === edgeId);
+        if (edge) {
+          const nextVertexId = edge.vertexIds[0] === currentVertexId ? edge.vertexIds[1] : edge.vertexIds[0];
+          
+          const newVisited = new Set(visitedEdgeIds);
+          newVisited.add(edgeId);
+          
+          findMaxPath(nextVertexId, newVisited, currentLength + 1);
+        }
+      }
+    });
+  };
+
+  // Iniciar búsqueda desde cada vértice que tenga aristas del jugador
+  // (Para asegurar que encontramos el camino más largo incluso si está dividido)
+  Object.keys(adj).forEach(startVertexId => {
+    findMaxPath(startVertexId, new Set(), 0);
+  });
+
+  return maxPath;
 }
 
 /**

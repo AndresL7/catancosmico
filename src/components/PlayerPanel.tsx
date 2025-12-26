@@ -2,6 +2,19 @@ import React from 'react';
 import type { Player } from '../types/game';
 import { RESOURCE_NAMES } from '../utils/constants';
 import { Star, Trophy, Users } from 'lucide-react';
+import darkMatterImg from '../assets/materia-oscura.jpg';
+import gasImg from '../assets/gas.jpg';
+import dustImg from '../assets/polvo-cosmico.jpg';
+import energyImg from '../assets/energia.jpg';
+import starsImg from '../assets/estrellas.jpg';
+
+const RESOURCE_IMAGES: Record<string, string> = {
+  'dark-matter': darkMatterImg,
+  'gas': gasImg,
+  'dust': dustImg,
+  'energy': energyImg,
+  'stars': starsImg,
+};
 
 interface PlayerPanelProps {
   player: Player;
@@ -47,50 +60,33 @@ export const PlayerPanel: React.FC<PlayerPanelProps> = ({ player, isCurrentPlaye
       </div>
 
       {/* Recursos */}
-      <div className="mb-3">
+      <div className="mb-1">
         <h4 className="text-xs text-gray-400 mb-2 flex items-center gap-1">
           <Star className="w-3 h-3" />
           RECURSOS
         </h4>
-        <div className="grid grid-cols-5 gap-1 text-xs">
+        <div className="grid grid-cols-3 gap-2 text-xs">
           {Object.entries(player.resources).map(([key, value]) => (
             <div
               key={key}
-              className="bg-black/30 p-2 rounded text-center"
+              className="relative bg-black/30 p-2 rounded text-center flex flex-col justify-center min-h-[50px] overflow-hidden group"
               title={RESOURCE_NAMES[key as keyof typeof RESOURCE_NAMES]}
             >
-              <div className="font-bold text-white">{value}</div>
-              <div className="text-[10px] text-gray-400 truncate">
-                {RESOURCE_NAMES[key as keyof typeof RESOURCE_NAMES]}
+              {/* Imagen de fondo */}
+              <div 
+                className="absolute inset-0 opacity-20 bg-cover bg-center transition-opacity group-hover:opacity-30"
+                style={{ backgroundImage: `url(${RESOURCE_IMAGES[key]})` }}
+              />
+              
+              {/* Contenido */}
+              <div className="relative z-10">
+                <div className="font-bold text-white text-sm drop-shadow-md">{value}</div>
+                <div className="text-[11px] text-gray-200 leading-tight drop-shadow-md font-medium">
+                  {RESOURCE_NAMES[key as keyof typeof RESOURCE_NAMES]}
+                </div>
               </div>
             </div>
           ))}
-        </div>
-      </div>
-
-      {/* Construcciones */}
-      <div>
-        <h4 className="text-xs text-gray-400 mb-2 flex items-center gap-1">
-          <Users className="w-3 h-3" />
-          CONSTRUCCIONES
-        </h4>
-        <div className="grid grid-cols-4 gap-2 text-xs">
-          <div className="bg-black/30 p-2 rounded text-center">
-            <div className="font-bold text-blue-400">{player.buildings.filaments}</div>
-            <div className="text-[10px] text-gray-400">Filamentos</div>
-          </div>
-          <div className="bg-black/30 p-2 rounded text-center">
-            <div className="font-bold text-green-400">{player.buildings.galaxies}</div>
-            <div className="text-[10px] text-gray-400">Galaxias</div>
-          </div>
-          <div className="bg-black/30 p-2 rounded text-center">
-            <div className="font-bold text-purple-400">{player.buildings.clusters}</div>
-            <div className="text-[10px] text-gray-400">Cúmulos</div>
-          </div>
-          <div className="bg-black/30 p-2 rounded text-center">
-            <div className="font-bold text-yellow-400">{player.buildings.discoveries}</div>
-            <div className="text-[10px] text-gray-400">Descub.</div>
-          </div>
         </div>
       </div>
     </div>

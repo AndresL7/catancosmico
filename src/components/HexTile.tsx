@@ -9,7 +9,7 @@ import polvoCosmicoImg from '../assets/polvo-cosmico.jpg';
 import energiaImg from '../assets/energia.jpg';
 import estrellasImg from '../assets/estrellas.jpg';
 import vacioImg from '../assets/vacio.jpg';
-import agujeronNegroImg from '../assets/agujero-negro.jpg';
+import agujeronNegroImg from '../assets/agujero-negro.gif';
 
 interface HexTileProps {
   tile: HexTileType;
@@ -37,6 +37,10 @@ export const HexTile: React.FC<HexTileProps> = ({ tile, onClick }) => {
   
   // Determinar si estamos en modo de mover agujero negro
   const isBlackHoleMoveMode = movingBlackHole || (diceValues[0] + diceValues[1] === 7 && phase === 'building');
+
+  // Determinar si este hexágono está produciendo recursos
+  const diceTotal = diceValues[0] + diceValues[1];
+  const isProducing = diceTotal === tile.diceNumber && !tile.hasBlackHole;
 
   // Tamaño del hexágono
   const size = 70; // tamaño en px
@@ -68,7 +72,6 @@ export const HexTile: React.FC<HexTileProps> = ({ tile, onClick }) => {
         className={`
           cursor-pointer transition-all duration-200
           hover:drop-shadow-2xl hover:brightness-110
-          ${tile.hasBlackHole ? 'animate-pulse' : ''}
           ${isBlackHoleMoveMode && !tile.hasBlackHole ? 'hover:brightness-125' : ''}
         `}
         onClick={onClick}
@@ -108,9 +111,23 @@ export const HexTile: React.FC<HexTileProps> = ({ tile, onClick }) => {
             stroke="#a855f7"
             strokeWidth="6"
             opacity="0.7"
+            className="animate-pulse"
           />
         )}
         
+        {/* Borde lima pulsante si está produciendo recursos */}
+        {isProducing && (
+          <polygon
+            points={hexPoints}
+            fill="none"
+            stroke="#84cc16"
+            strokeWidth="6"
+            opacity="0.8"
+            className="animate-pulse"
+            style={{ filter: 'drop-shadow(0 0 5px #84cc16)' }}
+          />
+        )}
+
         {/* Borde amarillo pulsante en modo de mover agujero negro */}
         {isBlackHoleMoveMode && !tile.hasBlackHole && (
           <polygon
@@ -151,11 +168,10 @@ export const HexTile: React.FC<HexTileProps> = ({ tile, onClick }) => {
         {tile.hasBlackHole && (
           <image
             href={agujeronNegroImg}
-            x={width / 2 - 20}
-            y={height / 2 - 35}
-            width="40"
-            height="40"
-            style={{ filter: 'drop-shadow(0 0 8px rgba(168, 85, 247, 0.8))' }}
+            x={width / 2 - 25.5}
+            y={height / 2 - 48}
+            width="51"
+            height="66"
           />
         )}
       </svg>

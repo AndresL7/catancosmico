@@ -75,17 +75,20 @@ export const BuildMenu: React.FC = () => {
 
                   {/* Costo */}
                   <div className="flex flex-wrap gap-1">
-                    {Object.entries(cost).map(([resource, amount]) => (
-                      <span
-                        key={resource}
-                        className={`
-                          text-[10px] px-2 py-1 rounded-full
-                          ${canBuildThis ? 'bg-blue-900/50 text-blue-300' : 'bg-gray-700/50 text-gray-400'}
-                        `}
-                      >
-                        {amount} {RESOURCE_NAMES[resource as keyof typeof RESOURCE_NAMES]}
-                      </span>
-                    ))}
+                    {Object.entries(cost).map(([resource, amount]) => {
+                      const hasResource = (currentPlayer.resources[resource as keyof typeof currentPlayer.resources] || 0) >= (amount || 0);
+                      return (
+                        <span
+                          key={resource}
+                          className={`
+                            text-[10px] px-2 py-1 rounded-full
+                            ${hasResource ? 'bg-blue-600 text-white font-bold' : 'bg-gray-700/50 text-gray-400'}
+                          `}
+                        >
+                          {amount} {RESOURCE_NAMES[resource as keyof typeof RESOURCE_NAMES]}
+                        </span>
+                      );
+                    })}
                   </div>
                 </div>
               </div>
@@ -119,17 +122,20 @@ export const BuildMenu: React.FC = () => {
 
               {/* Costo */}
               <div className="flex flex-wrap gap-1">
-                {Object.entries(BUILD_COSTS['discovery']).map(([resource, amount]) => (
-                  <span
-                    key={resource}
-                    className={`
-                      text-[10px] px-2 py-1 rounded-full
-                      ${canBuild(currentPlayer, 'discovery') && discoveryDeck.length > 0 ? 'bg-blue-900/50 text-blue-300' : 'bg-gray-700/50 text-gray-400'}
-                    `}
-                  >
-                    {amount} {RESOURCE_NAMES[resource as keyof typeof RESOURCE_NAMES]}
-                  </span>
-                ))}
+                {Object.entries(BUILD_COSTS['discovery']).map(([resource, amount]) => {
+                  const hasResource = (currentPlayer.resources[resource as keyof typeof currentPlayer.resources] || 0) >= (amount || 0);
+                  return (
+                    <span
+                      key={resource}
+                      className={`
+                        text-[10px] px-2 py-1 rounded-full
+                        ${hasResource ? 'bg-blue-600 text-white font-bold' : 'bg-gray-700/50 text-gray-400'}
+                      `}
+                    >
+                      {amount} {RESOURCE_NAMES[resource as keyof typeof RESOURCE_NAMES]}
+                    </span>
+                  );
+                })}
               </div>
             </div>
           </div>

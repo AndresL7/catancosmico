@@ -5,6 +5,7 @@ import { Dice } from './components/Dice';
 import { PlayerPanel } from './components/PlayerPanel';
 import { BuildMenu } from './components/BuildMenu';
 import { TradePanel } from './components/TradePanel';
+import { VictoryPanel } from './components/VictoryPanel';
 import { DiscoveryCardDisplay } from './components/DiscoveryCardDisplay';
 import { BlackHoleMover } from './components/BlackHoleMover';
 import { MonopolySelector } from './components/MonopolySelector';
@@ -86,6 +87,7 @@ function App() {
               </h1>
             </div>
             <p className="text-gray-400">Conquista el universo</p>
+            <p className="text-gray-500 text-xs mt-1">by Andrés López Echeverri</p>
           </div>
 
           <div className="mb-6">
@@ -94,7 +96,7 @@ function App() {
               Número de Jugadores
             </label>
             <div className="grid grid-cols-2 gap-3">
-              {[2, 3, 4].map((num) => (
+              {[3, 4].map((num) => (
                 <button
                   key={num}
                   onClick={() => setSelectedPlayers(num)}
@@ -276,6 +278,9 @@ function App() {
           
           {/* Panel de Comercio */}
           {hasRolled && phase === 'building' && <TradePanel />}
+
+          {/* Panel de Victoria */}
+          <VictoryPanel />
         </div>
       </div>
 

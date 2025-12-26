@@ -20,6 +20,7 @@ export interface DiscoveryCard {
   type: DiscoveryCardType;
   description: string;
   victoryPoints?: number; // Solo para cartas de descubrimiento (victoria secreta)
+  turnBought?: number; // Turno en que se compró
 }
 
 export interface TradeOffer {
@@ -55,6 +56,7 @@ export interface Player {
   discoveryCards: DiscoveryCard[]; // Cartas en mano
   playedPozosGravitacionales: number; // Contador para Dominio Gravitacional
   hasDominioGravitacional: boolean; // Mayor ejército (3+ pozos)
+  hasLongestChain: boolean; // Cadena filamentar más larga (5+ filamentos)
 }
 
 // Representa un vértice (intersección) donde se pueden colocar galaxias
@@ -77,12 +79,23 @@ export interface Edge {
   playerId: number | null;
 }
 
+// Representa un puerto (agujero de gusano)
+export interface Port {
+  id: string;
+  type: 'generic' | 'specialized';
+  resource?: ResourceType; // Solo si es especializado
+  vertexIds: [string, string]; // Los dos vértices que dan acceso al puerto
+  position: { x: number; y: number }; // Posición para renderizar el icono
+  rotation: number; // Ángulo para orientar el icono hacia el centro
+}
+
 export interface GameState {
   players: Player[];
   currentPlayerIndex: number;
   board: HexTile[];
   vertices: Vertex[];
   edges: Edge[];
+  ports: Port[]; // Lista de puertos en el tablero
   diceValues: [number, number];
   phase: 'setup-galaxy-1' | 'setup-filament-1' | 'setup-galaxy-2' | 'setup-filament-2' | 'playing' | 'building' | 'trading' | 'ended';
   setupRound: number; // 1 o 2 (para las dos rondas de setup)

@@ -2,13 +2,14 @@ import React from 'react';
 import { HexTile } from './HexTile';
 import { VertexMarker } from './VertexMarker';
 import { EdgeMarker } from './EdgeMarker';
+import { Port } from './Port';
 import { useGameStore } from '../state/gameStore';
 
 /**
  * Componente que renderiza el tablero completo de hexágonos estilo panal de abejas
  */
 export const Board: React.FC = () => {
-  const { board, vertices, edges, phase, moveBlackHole, placeGalaxy, placeFilament, undoLastPlacement, players, currentPlayerIndex, movingBlackHole, confirmBlackHoleMove, upgradingToCluster, upgradeGalaxyToCluster, placingGalaxy, placingFilament } = useGameStore();
+  const { board, vertices, edges, ports, phase, moveBlackHole, placeGalaxy, placeFilament, undoLastPlacement, players, currentPlayerIndex, movingBlackHole, confirmBlackHoleMove, upgradingToCluster, upgradeGalaxyToCluster, placingGalaxy, placingFilament } = useGameStore();
 
   const handleHexClick = (hexId: number) => {
     // Permitir mover el agujero negro cuando sale un 7 O cuando se está usando una carta de pozo gravitacional
@@ -171,6 +172,11 @@ export const Board: React.FC = () => {
             </div>
           );
         })}
+
+        {/* Puertos (Agujeros de Gusano) */}
+        {ports && ports.map((port) => (
+          <Port key={port.id} port={port} />
+        ))}
         
         {/* Espaciador invisible para dar altura al contenedor */}
         <div style={{ height: `${rows.length * verticalSpacing + hexHeight / 4}px`, width: `${maxRowWidth}px` }} />
@@ -186,12 +192,6 @@ export const Board: React.FC = () => {
             {isGalaxyPhase && 'Haz clic en una intersección (punto amarillo)'}
             {isFilamentPhase && 'Haz clic en un lado adyacente a tu galaxia'}
           </p>
-          <button
-            onClick={undoLastPlacement}
-            className="mt-3 px-4 py-2 bg-red-600/80 hover:bg-red-500 text-white rounded-lg transition-colors duration-200 text-sm font-semibold"
-          >
-            ↶ Deshacer última colocación
-          </button>
         </div>
       )}
       

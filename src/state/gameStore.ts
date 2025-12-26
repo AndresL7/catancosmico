@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { GameState, BuildingType, ResourceType, TradeOffer } from '../types/game';
+import type { GameState, BuildingType, ResourceType, TradeOffer, Player, Edge, Vertex } from '../types/game';
 import {
   generateBoard,
   rollDice,
@@ -12,16 +12,20 @@ import {
   clearGameState,
   generateVertices,
   generateEdges,
+  generatePorts,
+  calculateLongestChainLength,
 } from '../utils/gameLogic';
-import { DEFAULT_PLAYERS, createShuffledDiscoveryDeck } from '../utils/constants';
+import { DEFAULT_PLAYERS, createShuffledDiscoveryDeck, RESOURCE_NAMES } from '../utils/constants';
 import sparkleSound from '../assets/sparkle.mp3';
 import errorSound from '../assets/error.mp3';
 import clickSound from '../assets/click.mp3';
+import victorySound from '../assets/rocky-victory1.mp3';
 
 // Crear un audio para el sonido de construcción
 const buildAudio = new Audio(sparkleSound);
 const errorAudio = new Audio(errorSound);
 const clickAudio = new Audio(clickSound);
+const victoryAudio = new Audio(victorySound);
 
 // Función helper para reproducir el sonido de construcción
 const playBuildSound = () => {
@@ -41,6 +45,83 @@ const playClickSound = () => {
   clickAudio.play().catch(err => console.log('Error al reproducir sonido:', err));
 };
 
+// Función helper para reproducir el sonido de victoria
+const playVictorySound = () => {
+  victoryAudio.currentTime = 0;
+  victoryAudio.play().catch(err => console.log('Error al reproducir sonido:', err));
+};
+
+// Helper para validar ofertas de comercio
+const validateTradeOffers = (players: Player[], offers: TradeOffer[]): TradeOffer[] => {
+  return offers.filter(offer => {
+    const player = players.find(p => p.id === offer.fromPlayerId);
+    if (!player) return false;
+    
+    return Object.entries(offer.offering).every(([resource, amount]) => {
+      return (player.resources[resource as ResourceType] || 0) >= (amount || 0);
+    });
+  });
+};
+
+// Helper para recalcular la Cadena Filamentar Más Larga
+const getLongestChainUpdate = (
+  players: Player[], 
+  edges: Edge[], 
+  vertices: Vertex[]
+): Player[] => {
+  // 1. Calcular longitudes para todos
+  const lengths = players.map(p => ({
+    id: p.id,
+    length: calculateLongestChainLength(p.id, edges, vertices)
+  }));
+  
+  // 2. Encontrar poseedor actual
+  const currentHolder = players.find(p => p.hasLongestChain);
+  const currentHolderId = currentHolder?.id;
+  
+  // 3. Encontrar máximo global
+  const maxLength = Math.max(...lengths.map(l => l.length));
+  
+  // 4. Determinar nuevo ganador
+  let newHolderId: number | null = null;
+  
+  if (maxLength >= 5) {
+    const candidates = lengths.filter(l => l.length === maxLength);
+    
+    if (currentHolderId !== undefined) {
+      // Si el poseedor actual sigue teniendo el máximo (empate o único), lo mantiene
+      const holderStillMax = candidates.some(c => c.id === currentHolderId);
+      if (holderStillMax) {
+        newHolderId = currentHolderId;
+      } else {
+        // Si el poseedor actual fue superado
+        // Si hay un único nuevo líder, se lo lleva
+        if (candidates.length === 1) {
+          newHolderId = candidates[0].id;
+        }
+        // Si hay empate entre nuevos líderes, nadie lo tiene
+      }
+    } else {
+      // Nadie lo tenía antes
+      // Si hay un único líder, se lo lleva
+      if (candidates.length === 1) {
+        newHolderId = candidates[0].id;
+      }
+    }
+  }
+  
+  // 5. Actualizar jugadores si hubo cambios
+  return players.map(p => {
+    const shouldHaveIt = p.id === newHolderId;
+    if (p.hasLongestChain !== shouldHaveIt) {
+      const newP = { ...p, hasLongestChain: shouldHaveIt };
+      newP.victoryPoints = calculateVictoryPoints(newP);
+      return newP;
+    }
+    return p;
+  });
+};
+
 interface GameStore extends GameState {
   // Acciones del juego
   rollDiceAction: () => void;
@@ -55,6 +136,7 @@ interface GameStore extends GameState {
   createTradeOffer: (offering: Partial<Record<ResourceType, number>>, requesting: Partial<Record<ResourceType, number>>) => void;
   acceptTradeOffer: (offerId: string, acceptingPlayerId: number) => void;
   cancelTradeOffer: (offerId: string) => void;
+  tradeWithBank: (offering: ResourceType, requesting: ResourceType) => void;
   buyDiscoveryCard: () => void;
   playDiscoveryCard: (cardId: number) => void;
   startMovingBlackHole: () => void;
@@ -78,6 +160,7 @@ interface GameStore extends GameState {
 const board = generateBoard();
 const vertices = generateVertices(board);
 const edges = generateEdges(board, vertices);
+const ports = generatePorts(edges, vertices);
 
 const initialState: GameState = {
   players: DEFAULT_PLAYERS,
@@ -85,6 +168,7 @@ const initialState: GameState = {
   board,
   vertices,
   edges,
+  ports,
   diceValues: [0, 0],
   phase: 'setup-galaxy-1',
   setupRound: 1,
@@ -179,8 +263,11 @@ export const useGameStore = create<GameStore>((set, get) => ({
         alert(`⚠️ ¡Número 7!\n\nJugadores con más de 7 recursos descartan la mitad:\n${affectedNames}`);
       }
       
-      set({ diceValues: dice, phase: 'building', players: updatedPlayers });
-      saveGameState({ ...get(), diceValues: dice, phase: 'building', players: updatedPlayers });
+      // Validar ofertas de comercio activas
+      const validTradeOffers = validateTradeOffers(updatedPlayers, get().tradeOffers);
+
+      set({ diceValues: dice, phase: 'building', players: updatedPlayers, tradeOffers: validTradeOffers });
+      saveGameState({ ...get(), diceValues: dice, phase: 'building', players: updatedPlayers, tradeOffers: validTradeOffers });
       return;
     }
 
@@ -197,6 +284,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const winner = playersWithPoints.find(
       (p) => p.victoryPoints >= get().victoryPointsToWin
     );
+
+    if (winner) playVictorySound();
 
     const newState = {
       diceValues: dice,
@@ -295,6 +384,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
         (p) => p.victoryPoints >= get().victoryPointsToWin
       );
 
+      if (winner) playVictorySound();
+
       const newState = {
         players: updatedPlayers,
         winner: winner ? winner.id : null,
@@ -335,6 +426,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const newBoard = generateBoard();
     const newVertices = generateVertices(newBoard);
     const newEdges = generateEdges(newBoard, newVertices);
+    const newPorts = generatePorts(newEdges, newVertices);
     
     // Crear jugadores según el número seleccionado
     const selectedPlayers = DEFAULT_PLAYERS.slice(0, numberOfPlayers).map(p => ({ 
@@ -347,6 +439,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       hexagons: newBoard.length, 
       vertices: newVertices.length, 
       edges: newEdges.length,
+      ports: newPorts.length,
       players: selectedPlayers.length 
     });
     
@@ -355,6 +448,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       board: newBoard,
       vertices: newVertices,
       edges: newEdges,
+      ports: newPorts,
       players: selectedPlayers,
       victoryPointsToWin: victoryPoints,
       discoveryDeck: createShuffledDiscoveryDeck(), // Regenerar mazo de cartas
@@ -403,10 +497,27 @@ export const useGameStore = create<GameStore>((set, get) => ({
    * Coloca una galaxia en un vértice (durante setup o construcción)
    */
   placeGalaxy: (vertexId: string) => {
-    const { vertices, players, currentPlayerIndex, phase, setupRound } = get();
+    const { vertices, edges, players, currentPlayerIndex, phase, setupRound } = get();
     
     const vertex = vertices.find((v) => v.id === vertexId);
     if (!vertex || vertex.occupied) return;
+
+    // Regla de distancia: Verificar que no haya edificios en vértices adyacentes
+    const adjacentEdges = edges.filter(e => e.vertexIds.includes(vertexId));
+    const adjacentVertexIds = adjacentEdges.map(e => 
+      e.vertexIds.find(id => id !== vertexId)!
+    );
+    
+    const hasAdjacentBuilding = adjacentVertexIds.some(id => {
+      const v = vertices.find(vert => vert.id === id);
+      return v && v.occupied;
+    });
+
+    if (hasAdjacentBuilding) {
+      playErrorSound();
+      alert('❌ Regla de distancia: No puedes construir una galaxia adyacente a otra (propia o enemiga). Debes dejar al menos un vértice de separación.');
+      return;
+    }
 
     // Durante fase de construcción
     if (phase === 'building') {
@@ -436,7 +547,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       if (!updatedVertex) return;
       
       // Actualizar jugador
-      const updatedPlayers = [...players];
+      let updatedPlayers = [...players];
       const updatedPlayer = {
         ...currentPlayer,
         resources: newResources,
@@ -449,10 +560,26 @@ export const useGameStore = create<GameStore>((set, get) => ({
       updatedPlayer.victoryPoints = calculateVictoryPoints(updatedPlayer);
       updatedPlayers[currentPlayerIndex] = updatedPlayer;
       
+      // Recalcular cadena más larga (una galaxia puede romper la cadena de un oponente)
+      updatedPlayers = getLongestChainUpdate(updatedPlayers, edges, updatedVertices);
+      
+      // Validar ofertas de comercio activas (eliminar las que ya no son válidas)
+      const validTradeOffers = validateTradeOffers(updatedPlayers, get().tradeOffers);
+
+      // Verificar ganador
+      const winner = updatedPlayers.find(
+        (p) => p.victoryPoints >= get().victoryPointsToWin
+      );
+
+      if (winner) playVictorySound();
+
       const newState = {
         vertices: updatedVertices,
         players: updatedPlayers,
+        tradeOffers: validTradeOffers,
         placingGalaxy: false, // Desactivar modo de colocación
+        winner: winner ? winner.id : null,
+        phase: winner ? ('ended' as const) : get().phase,
       };
       
       set(newState);
@@ -480,7 +607,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
     if (!updatedVertex) return;
 
     // Actualizar jugador
-    const updatedPlayers = [...players];
+    let updatedPlayers = [...players];
     const playerUpdate = {
       ...updatedPlayers[currentPlayerIndex],
       buildings: {
@@ -510,6 +637,9 @@ export const useGameStore = create<GameStore>((set, get) => ({
       updatedPlayers[currentPlayerIndex].resources = resources;
     }
 
+    // Recalcular cadena más larga
+    updatedPlayers = getLongestChainUpdate(updatedPlayers, edges, updatedVertices);
+
     const nextPhase = (setupRound === 1 ? 'setup-filament-1' : 'setup-filament-2') as 'setup-filament-1' | 'setup-filament-2';
     
     const newState = {
@@ -526,10 +656,52 @@ export const useGameStore = create<GameStore>((set, get) => ({
    * Coloca un filamento en una arista (durante setup o construcción)
    */
   placeFilament: (edgeId: string) => {
-    const { edges, players, currentPlayerIndex, phase, setupRound, buildingFreeRoads } = get();
+    const { edges, players, currentPlayerIndex, phase, setupRound, buildingFreeRoads, vertices } = get();
     
     const edge = edges.find((e) => e.id === edgeId);
     if (!edge || edge.occupied) return;
+
+    // Validar conectividad
+    let isConnected = false;
+    const currentPlayer = players[currentPlayerIndex];
+
+    if (phase.startsWith('setup-filament')) {
+      // En setup, debe conectarse a la última galaxia colocada
+      const lastGalaxy = currentPlayer.placedGalaxies[currentPlayer.placedGalaxies.length - 1];
+      
+      if (lastGalaxy && edge.vertexIds.includes(lastGalaxy.id)) {
+        isConnected = true;
+      } else {
+        playErrorSound();
+        alert('❌ En la fase de preparación, el filamento debe estar conectado a la última galaxia que colocaste.');
+        return;
+      }
+    } else {
+      // Juego normal: conectado a galaxia/cúmulo propio O filamento propio
+      isConnected = edge.vertexIds.some(vertexId => {
+        // 1. Conectado a galaxia/cúmulo propio
+        const vertex = vertices.find(v => v.id === vertexId);
+        if (vertex?.occupied && vertex.playerId === currentPlayer.id) {
+          return true;
+        }
+        
+        // 2. Conectado a otro filamento propio
+        const connectedEdge = edges.find(e => 
+          e.id !== edgeId && 
+          e.occupied && 
+          e.playerId === currentPlayer.id &&
+          e.vertexIds.includes(vertexId)
+        );
+        
+        return !!connectedEdge;
+      });
+      
+      if (!isConnected) {
+        playErrorSound();
+        alert('❌ Debes colocar el filamento conectado a una de tus galaxias o a otro filamento tuyo.');
+        return;
+      }
+    }
 
     // Durante fase de construcción
     if (phase === 'building') {
@@ -548,7 +720,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
         );
         
         // Actualizar jugador
-        const updatedPlayers = [...players];
+        let updatedPlayers = [...players];
         updatedPlayers[currentPlayerIndex] = {
           ...currentPlayer,
           buildings: {
@@ -557,6 +729,9 @@ export const useGameStore = create<GameStore>((set, get) => ({
           },
           placedFilaments: [...currentPlayer.placedFilaments, edge],
         };
+        
+        // Recalcular cadena más larga
+        updatedPlayers = getLongestChainUpdate(updatedPlayers, updatedEdges, vertices);
         
         const newState = {
           edges: updatedEdges,
@@ -592,7 +767,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       );
       
       // Actualizar jugador
-      const updatedPlayers = [...players];
+      let updatedPlayers = [...players];
       updatedPlayers[currentPlayerIndex] = {
         ...currentPlayer,
         resources: newResources,
@@ -603,10 +778,26 @@ export const useGameStore = create<GameStore>((set, get) => ({
         placedFilaments: [...currentPlayer.placedFilaments, edge],
       };
       
+      // Recalcular cadena más larga
+      updatedPlayers = getLongestChainUpdate(updatedPlayers, updatedEdges, vertices);
+      
+      // Validar ofertas de comercio activas
+      const validTradeOffers = validateTradeOffers(updatedPlayers, get().tradeOffers);
+
+      // Verificar ganador
+      const winner = updatedPlayers.find(
+        (p) => p.victoryPoints >= get().victoryPointsToWin
+      );
+
+      if (winner) playVictorySound();
+
       const newState = {
         edges: updatedEdges,
         players: updatedPlayers,
+        tradeOffers: validTradeOffers,
         placingFilament: false, // Desactivar modo de colocación
+        winner: winner ? winner.id : null,
+        phase: winner ? ('ended' as const) : get().phase,
       };
       
       set(newState);
@@ -630,7 +821,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
     );
 
     // Actualizar jugador
-    const updatedPlayers = [...players];
+    let updatedPlayers = [...players];
     updatedPlayers[currentPlayerIndex] = {
       ...updatedPlayers[currentPlayerIndex],
       buildings: {
@@ -639,6 +830,9 @@ export const useGameStore = create<GameStore>((set, get) => ({
       },
       placedFilaments: [...updatedPlayers[currentPlayerIndex].placedFilaments, edge],
     };
+
+    // Recalcular cadena más larga
+    updatedPlayers = getLongestChainUpdate(updatedPlayers, updatedEdges, vertices);
 
     // Determinar siguiente fase
     let nextPhase: typeof phase;
@@ -838,7 +1032,10 @@ export const useGameStore = create<GameStore>((set, get) => ({
     });
     
     // Eliminar la oferta aceptada
-    const updatedOffers = state.tradeOffers.filter(o => o.id !== offerId);
+    let updatedOffers = state.tradeOffers.filter(o => o.id !== offerId);
+    
+    // Validar el resto de ofertas (por si los recursos cambiaron y afectan otras ofertas)
+    updatedOffers = validateTradeOffers(updatedPlayers, updatedOffers);
     
     const newState = { ...state, players: updatedPlayers, tradeOffers: updatedOffers };
     set(newState);
@@ -853,6 +1050,69 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const newState = { ...state, tradeOffers: state.tradeOffers.filter(o => o.id !== offerId) };
     set(newState);
     saveGameState(newState);
+  },
+
+  /**
+   * Realiza un intercambio con el banco (reserva)
+   */
+  tradeWithBank: (offeringResource, requestingResource) => {
+    const { players, currentPlayerIndex, ports, vertices } = get();
+    const currentPlayer = players[currentPlayerIndex];
+    
+    // Calcular tasa de cambio
+    let tradeRatio = 4; // Por defecto 4:1
+    
+    // Verificar si tiene acceso a puertos
+    // Buscar vértices ocupados por el jugador
+    const playerVertices = vertices.filter(v => 
+      v.occupied && v.playerId === currentPlayer.id
+    );
+    
+    // Verificar cada puerto
+    ports.forEach(port => {
+      // Si el jugador ocupa alguno de los vértices del puerto
+      const hasAccess = port.vertexIds.some(vId => 
+        playerVertices.some(pv => pv.id === vId)
+      );
+      
+      if (hasAccess) {
+        if (port.type === 'generic') {
+          tradeRatio = Math.min(tradeRatio, 3); // Puerto 3:1
+        } else if (port.type === 'specialized' && port.resource === offeringResource) {
+          tradeRatio = Math.min(tradeRatio, 2); // Puerto 2:1 para este recurso
+        }
+      }
+    });
+    
+    // Verificar si tiene suficientes recursos
+    if ((currentPlayer.resources[offeringResource] || 0) < tradeRatio) {
+      playErrorSound();
+      alert(`❌ No tienes suficientes recursos. Necesitas ${tradeRatio} de ${RESOURCE_NAMES[offeringResource]} para comerciar.`);
+      return;
+    }
+    
+    playBuildSound(); // Usar sonido de éxito
+    
+    // Ejecutar intercambio
+    const newResources = { ...currentPlayer.resources };
+    newResources[offeringResource] -= tradeRatio;
+    newResources[requestingResource] += 1;
+    
+    const updatedPlayers = [...players];
+    updatedPlayers[currentPlayerIndex] = {
+      ...currentPlayer,
+      resources: newResources
+    };
+    
+    // Validar ofertas de comercio activas
+    const validTradeOffers = validateTradeOffers(updatedPlayers, get().tradeOffers);
+
+    const newState = { 
+      players: updatedPlayers,
+      tradeOffers: validTradeOffers
+    };
+    set(newState);
+    saveGameState({ ...get(), ...newState });
   },
 
   /**
@@ -879,6 +1139,9 @@ export const useGameStore = create<GameStore>((set, get) => ({
     // Tomar la carta del mazo
     const [drawnCard, ...remainingDeck] = state.discoveryDeck;
     
+    // Marcar el turno en que se compró
+    const cardWithTurn = { ...drawnCard, turnBought: state.turn };
+    
     // Deducir los recursos
     const newResources = deductResources(currentPlayer.resources, 'discovery');
     
@@ -888,7 +1151,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
         return {
           ...player,
           resources: newResources,
-          discoveryCards: [...player.discoveryCards, drawnCard],
+          discoveryCards: [...player.discoveryCards, cardWithTurn],
           buildings: {
             ...player.buildings,
             discoveries: player.buildings.discoveries + 1,
@@ -904,12 +1167,25 @@ export const useGameStore = create<GameStore>((set, get) => ({
       victoryPoints: calculateVictoryPoints(player),
     }));
 
+    // Validar ofertas de comercio activas
+    const validTradeOffers = validateTradeOffers(playersWithPoints, state.tradeOffers);
+
+    // Verificar ganador
+    const winner = playersWithPoints.find(
+      (p) => p.victoryPoints >= get().victoryPointsToWin
+    );
+
+    if (winner) playVictorySound();
+
     playBuildSound();
     
     const newState = {
       ...state,
       players: playersWithPoints,
+      tradeOffers: validTradeOffers,
       discoveryDeck: remainingDeck,
+      winner: winner ? winner.id : null,
+      phase: winner ? ('ended' as const) : state.phase,
     };
     
     set(newState);
@@ -936,6 +1212,13 @@ export const useGameStore = create<GameStore>((set, get) => ({
       return;
     }
 
+    // Verificar si la carta se compró en este turno (no se puede jugar)
+    if (card.turnBought === state.turn && card.type !== 'descubrimiento') {
+      playErrorSound();
+      alert('❌ No puedes jugar una carta en el mismo turno que la compraste.');
+      return;
+    }
+
     // Manejar cartas de Pozo Gravitacional
     if (card.type === 'pozo_gravitacional') {
       // Incrementar contador de pozos gravitacionales
@@ -951,18 +1234,29 @@ export const useGameStore = create<GameStore>((set, get) => ({
         return player;
       });
 
-      // Verificar si algún jugador alcanzó 3 pozos para Dominio Gravitacional
-      const playersWithDominio = updatedPlayers.map(player => {
-        const hasDominio = player.playedPozosGravitacionales >= 3;
+      // Lógica de Mayor Influencia Gravitacional (Ejército más grande)
+      // 1. Encontrar quién tiene actualmente la Mayor Influencia
+      const currentHolder = state.players.find(p => p.hasDominioGravitacional);
+      const currentMax = currentHolder ? currentHolder.playedPozosGravitacionales : 2; // Mínimo 3 para reclamar (superar 2)
+
+      // 2. Determinar quién tendrá la Mayor Influencia después de esta jugada
+      const finalPlayers = updatedPlayers.map(player => {
+        let hasDominio = player.hasDominioGravitacional;
+
+        // Si es el jugador actual, verificar si supera al poseedor actual
+        if (player.id === currentPlayer.id) {
+          if (player.playedPozosGravitacionales > currentMax) {
+            hasDominio = true; // Reclama la influencia
+          }
+        } else {
+          // Si otro jugador acaba de reclamarla, este la pierde
+          if (currentPlayer.id !== player.id && updatedPlayers.find(p => p.id === currentPlayer.id)?.playedPozosGravitacionales! > currentMax) {
+            hasDominio = false;
+          }
+        }
+        
         return { ...player, hasDominioGravitacional: hasDominio };
       });
-
-      // Solo un jugador puede tener Dominio Gravitacional (el que tenga más pozos)
-      const maxPozos = Math.max(...playersWithDominio.map(p => p.playedPozosGravitacionales));
-      const finalPlayers = playersWithDominio.map(player => ({
-        ...player,
-        hasDominioGravitacional: player.playedPozosGravitacionales === maxPozos && maxPozos >= 3,
-      }));
 
       // Recalcular puntos de victoria (+2 puntos por Dominio Gravitacional)
       const playersWithPoints = finalPlayers.map(player => ({
@@ -970,11 +1264,20 @@ export const useGameStore = create<GameStore>((set, get) => ({
         victoryPoints: calculateVictoryPoints(player),
       }));
 
+      // Verificar ganador
+      const winner = playersWithPoints.find(
+        (p) => p.victoryPoints >= get().victoryPointsToWin
+      );
+
+      if (winner) playVictorySound();
+
       const newState = {
         ...state,
         players: playersWithPoints,
         discardedDiscoveryCards: [...state.discardedDiscoveryCards, card],
-        movingBlackHole: true, // Activar modo de mover agujero negro
+        movingBlackHole: !winner, // Solo mover si no ganó
+        winner: winner ? winner.id : null,
+        phase: winner ? ('ended' as const) : state.phase,
       };
       
       set(newState);
@@ -1077,6 +1380,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
    * Confirma el movimiento del agujero negro a un hexágono
    */
   confirmBlackHoleMove: (hexId: number) => {
+    playClickSound();
     const state = get();
     
     // Mover el agujero negro
@@ -1173,9 +1477,13 @@ export const useGameStore = create<GameStore>((set, get) => ({
       return player;
     });
 
+    // Validar ofertas de comercio activas (alguien pudo perder recursos necesarios)
+    const validTradeOffers = validateTradeOffers(updatedPlayers, state.tradeOffers);
+
     const newState = {
       ...state,
       players: updatedPlayers,
+      tradeOffers: validTradeOffers,
       movingBlackHole: false,
       selectingVictim: null,
     };
@@ -1235,9 +1543,13 @@ export const useGameStore = create<GameStore>((set, get) => ({
       return player;
     });
 
+    // Validar ofertas de comercio activas
+    const validTradeOffers = validateTradeOffers(finalPlayers, state.tradeOffers);
+
     const newState = {
       ...state,
       players: finalPlayers,
+      tradeOffers: validTradeOffers,
       selectingMonopolyResource: false,
     };
 
@@ -1382,11 +1694,24 @@ export const useGameStore = create<GameStore>((set, get) => ({
       return player;
     });
 
+    // Validar ofertas de comercio activas
+    const validTradeOffers = validateTradeOffers(updatedPlayers, state.tradeOffers);
+
+    // Verificar ganador
+    const winner = updatedPlayers.find(
+      (p) => p.victoryPoints >= get().victoryPointsToWin
+    );
+
+    if (winner) playVictorySound();
+
     const newState = {
       ...state,
       vertices: updatedVertices,
       players: updatedPlayers,
+      tradeOffers: validTradeOffers,
       upgradingToCluster: false,
+      winner: winner ? winner.id : null,
+      phase: winner ? ('ended' as const) : state.phase,
     };
 
     set(newState);
