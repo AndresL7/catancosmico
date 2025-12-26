@@ -1623,7 +1623,44 @@ export const useGameStore = create<GameStore>((set, get) => ({
    * Cancela la selección de recursos para invención
    */
   cancelInventionSelection: () => {
-    set({ selectingInventionResources: false });
+    const state = get();
+    const currentPlayer = state.players[state.currentPlayerIndex];
+    
+    // Recuperar la carta del descarte (debería ser la última agregada)
+    // Buscamos por nombre para asegurar que sea la correcta
+    const cardIndex = state.discardedDiscoveryCards.map(c => c.name).lastIndexOf('Agujero Blanco');
+    
+    if (cardIndex !== -1) {
+      const card = state.discardedDiscoveryCards[cardIndex];
+      
+      // Remover del descarte
+      const newDiscarded = [...state.discardedDiscoveryCards];
+      newDiscarded.splice(cardIndex, 1);
+      
+      // Devolver al jugador
+      const updatedPlayers = state.players.map(p => {
+        if (p.id === currentPlayer.id) {
+          return {
+            ...p,
+            discoveryCards: [...p.discoveryCards, card]
+          };
+        }
+        return p;
+      });
+      
+      const newState = {
+        ...state,
+        selectingInventionResources: false,
+        discardedDiscoveryCards: newDiscarded,
+        players: updatedPlayers
+      };
+      
+      set(newState);
+      saveGameState(newState);
+    } else {
+      // Fallback por si no se encuentra la carta
+      set({ selectingInventionResources: false });
+    }
   },
 
   /**
