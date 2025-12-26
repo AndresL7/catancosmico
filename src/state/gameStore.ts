@@ -1635,6 +1635,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const newState = {
       ...state,
       buildingFreeRoads: 2, // Permite construir 2 filamentos gratis
+      placingFilament: true, // Activar modo de colocación
     };
 
     set(newState);
