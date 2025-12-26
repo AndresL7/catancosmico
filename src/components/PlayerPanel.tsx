@@ -1,7 +1,7 @@
 import React from 'react';
 import type { Player } from '../types/game';
 import { RESOURCE_NAMES } from '../utils/constants';
-import { Star, Trophy, Users } from 'lucide-react';
+import { Star, Trophy } from 'lucide-react';
 import darkMatterImg from '../assets/materia-oscura.jpg';
 import gasImg from '../assets/gas.jpg';
 import dustImg from '../assets/polvo-cosmico.jpg';

@@ -9,7 +9,7 @@ import { useGameStore } from '../state/gameStore';
  * Componente que renderiza el tablero completo de hexágonos estilo panal de abejas
  */
 export const Board: React.FC = () => {
-  const { board, vertices, edges, ports, phase, moveBlackHole, placeGalaxy, placeFilament, undoLastPlacement, players, currentPlayerIndex, movingBlackHole, confirmBlackHoleMove, upgradingToCluster, upgradeGalaxyToCluster, placingGalaxy, placingFilament } = useGameStore();
+  const { board, vertices, edges, ports, phase, moveBlackHole, placeGalaxy, placeFilament, players, currentPlayerIndex, movingBlackHole, confirmBlackHoleMove, upgradingToCluster, upgradeGalaxyToCluster, placingGalaxy, placingFilament } = useGameStore();
 
   const handleHexClick = (hexId: number) => {
     // Permitir mover el agujero negro cuando sale un 7 O cuando se está usando una carta de pozo gravitacional

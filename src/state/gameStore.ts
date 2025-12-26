@@ -1213,7 +1213,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
     }
 
     // Verificar si la carta se compró en este turno (no se puede jugar)
-    if (card.turnBought === state.turn && card.type !== 'descubrimiento') {
+    if (card.turnBought === state.turn) {
       playErrorSound();
       alert('❌ No puedes jugar una carta en el mismo turno que la compraste.');
       return;

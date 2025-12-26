@@ -94,6 +94,7 @@ export const DEFAULT_PLAYERS = [
     discoveryCards: [],
     playedPozosGravitacionales: 0,
     hasDominioGravitacional: false,
+    hasLongestChain: false,
   },
   {
     id: 2,
@@ -118,6 +119,7 @@ export const DEFAULT_PLAYERS = [
     discoveryCards: [],
     playedPozosGravitacionales: 0,
     hasDominioGravitacional: false,
+    hasLongestChain: false,
   },
   {
     id: 3,
@@ -142,6 +144,7 @@ export const DEFAULT_PLAYERS = [
     discoveryCards: [],
     playedPozosGravitacionales: 0,
     hasDominioGravitacional: false,
+    hasLongestChain: false,
   },
   {
     id: 4,
@@ -166,6 +169,7 @@ export const DEFAULT_PLAYERS = [
     discoveryCards: [],
     playedPozosGravitacionales: 0,
     hasDominioGravitacional: false,
+    hasLongestChain: false,
   },
 ];
 
