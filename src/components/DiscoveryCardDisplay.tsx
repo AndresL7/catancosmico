@@ -48,7 +48,7 @@ export function DiscoveryCardDisplay() {
   };
 
   return (
-    <div className="fixed right-4 top-20 bg-gray-800 p-4 rounded-lg shadow-lg max-w-sm max-h-[70vh] overflow-y-auto">
+    <div className="fixed right-4 top-20 bg-gray-800 p-4 rounded-lg shadow-lg max-w-sm max-h-[70vh] overflow-y-auto z-50">
       <h3 className="text-white font-bold mb-3 text-lg">
         Tus Cartas ({currentPlayer.discoveryCards.length})
       </h3>
