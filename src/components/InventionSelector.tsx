@@ -6,6 +6,8 @@ export function InventionSelector() {
   const selectingInventionResources = useGameStore((state) => state.selectingInventionResources);
   const confirmInventionResources = useGameStore((state) => state.confirmInventionResources);
   const cancelInventionSelection = useGameStore((state) => state.cancelInventionSelection);
+  const currentPlayerIndex = useGameStore((state) => state.currentPlayerIndex);
+  const players = useGameStore((state) => state.players);
 
   const [selectedResources, setSelectedResources] = useState<ResourceType[]>([]);
 
@@ -13,12 +15,14 @@ export function InventionSelector() {
     return null;
   }
 
-  const resources: { type: ResourceType; name: string; icon: string; color: string }[] = [
-    { type: 'dark-matter', name: 'Materia Oscura', icon: '🌑', color: 'bg-purple-600 hover:bg-purple-500' },
-    { type: 'gas', name: 'Gas', icon: '💨', color: 'bg-blue-600 hover:bg-blue-500' },
-    { type: 'dust', name: 'Polvo Cósmico', icon: '✨', color: 'bg-yellow-600 hover:bg-yellow-500' },
-    { type: 'energy', name: 'Energía', icon: '⚡', color: 'bg-red-600 hover:bg-red-500' },
-    { type: 'stars', name: 'Estrellas', icon: '⭐', color: 'bg-orange-600 hover:bg-orange-500' },
+  const currentPlayer = players[currentPlayerIndex];
+
+  const resources: { type: ResourceType; name: string; color: string }[] = [
+    { type: 'dark-matter', name: 'Materia Oscura', color: 'bg-purple-600 hover:bg-purple-500' },
+    { type: 'gas', name: 'Gas', color: 'bg-blue-600 hover:bg-blue-500' },
+    { type: 'dust', name: 'Polvo Cósmico', color: 'bg-yellow-600 hover:bg-yellow-500' },
+    { type: 'energy', name: 'Energía', color: 'bg-red-600 hover:bg-red-500' },
+    { type: 'stars', name: 'Estrellas', color: 'bg-orange-600 hover:bg-orange-500' },
   ];
 
   const toggleResource = (resourceType: ResourceType) => {
@@ -55,17 +59,18 @@ export function InventionSelector() {
           {resources.map((resource) => {
             const isSelected = selectedResources.includes(resource.type);
             const count = selectedResources.filter(r => r === resource.type).length;
+            const playerAmount = currentPlayer.resources[resource.type];
             
             return (
               <button
                 key={resource.type}
                 onClick={() => toggleResource(resource.type)}
-                className={`${resource.color} text-white p-6 rounded-lg font-semibold transition-all transform hover:scale-105 shadow-lg relative ${
+                className={`${resource.color} text-white p-4 rounded-lg font-semibold transition-all transform hover:scale-105 shadow-lg relative ${
                   isSelected ? 'ring-4 ring-yellow-400' : ''
                 }`}
               >
-                <div className="text-5xl mb-2">{resource.icon}</div>
-                <div className="text-lg">{resource.name}</div>
+                <div className="text-lg mb-1">{resource.name}</div>
+                <div className="text-sm opacity-80">Tienes: {playerAmount}</div>
                 {count > 0 && (
                   <div className="absolute top-2 right-2 bg-yellow-400 text-black w-8 h-8 rounded-full flex items-center justify-center font-bold text-lg">
                     {count}
