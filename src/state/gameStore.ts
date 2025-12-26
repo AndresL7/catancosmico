@@ -1312,8 +1312,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
         return;
       }
 
-      // Invención Galáctica
-      if (card.name === 'Invención Galáctica') {
+      // Agujero Blanco (antes Invención Galáctica)
+      if (card.name === 'Agujero Blanco') {
         const updatedPlayers = state.players.map(player => {
           if (player.id === currentPlayer.id) {
             return {
@@ -1616,7 +1616,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       'stars': 'Estrellas',
     };
 
-    alert(`🔬 ¡Invención Galáctica activada!\n\nRecibiste: 1 ${resourceNames[resource1]} + 1 ${resourceNames[resource2]}`);
+    alert(`🔬 ¡Agujero Blanco activado!\n\nRecibiste: 1 ${resourceNames[resource1]} + 1 ${resourceNames[resource2]}`);
   },
 
   /**

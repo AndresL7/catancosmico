@@ -45,7 +45,7 @@ export function InventionSelector() {
     <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
       <div className="bg-gradient-to-br from-blue-900 to-purple-900 p-8 rounded-lg shadow-2xl max-w-2xl border-4 border-blue-400">
         <h2 className="text-white font-bold text-2xl mb-2 text-center">
-          🔬 Invención Galáctica
+          🔬 Agujero Blanco
         </h2>
         <p className="text-blue-200 text-center mb-6 text-sm">
           Selecciona 2 recursos gratis del banco ({selectedResources.length}/2)

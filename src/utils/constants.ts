@@ -196,15 +196,15 @@ export const DISCOVERY_CARDS: DiscoveryCard[] = [
   { id: 16, name: 'Constructor de Filamentos', type: 'progreso', description: 'Construye 2 filamentos gratis.' },
   { id: 17, name: 'Monopolio Cósmico', type: 'progreso', description: 'Elige un tipo de recurso. Todos los jugadores deben darte todos sus recursos de ese tipo.' },
   { id: 18, name: 'Monopolio Cósmico', type: 'progreso', description: 'Elige un tipo de recurso. Todos los jugadores deben darte todos sus recursos de ese tipo.' },
-  { id: 19, name: 'Invención Galáctica', type: 'progreso', description: 'Toma 2 recursos de cualquier tipo del banco.' },
-  { id: 20, name: 'Invención Galáctica', type: 'progreso', description: 'Toma 2 recursos de cualquier tipo del banco.' },
+  { id: 19, name: 'Agujero Blanco', type: 'progreso', description: 'Toma 2 recursos de cualquier tipo del banco.' },
+  { id: 20, name: 'Agujero Blanco', type: 'progreso', description: 'Toma 2 recursos de cualquier tipo del banco.' },
   
   // Cartas de Descubrimiento/Victoria (5 cartas) - 1 punto de victoria cada una
-  { id: 21, name: 'Biblioteca Galáctica', type: 'descubrimiento', description: 'Has descubierto una antigua biblioteca con conocimiento ancestral.', victoryPoints: 1 },
-  { id: 22, name: 'Nebulosa Antigua', type: 'descubrimiento', description: 'Has cartografiado una nebulosa de importancia histórica.', victoryPoints: 1 },
-  { id: 23, name: 'Portal Estelar', type: 'descubrimiento', description: 'Has activado un portal que conecta galaxias distantes.', victoryPoints: 1 },
+  { id: 21, name: 'Fondo Cósmico de Microondas', type: 'descubrimiento', description: 'Has detectado la radiación del fondo cósmico del microondas, ¡un eco del big bang!', victoryPoints: 1 },
+  { id: 22, name: 'Ondas Gravitacionales', type: 'descubrimiento', description: 'Has detectado ondas gravitacionales, ondulaciones del espacio-tiempo generadas por eventos cósmicos como la fusión de dos agujeros negros.', victoryPoints: 1 },
+  { id: 23, name: 'Energía Oscura', type: 'descubrimiento', description: 'Has descubierto la energía oscura, ¡Causante de la expansión del universo!', victoryPoints: 1 },
   { id: 24, name: 'Exoplaneta Habitable', type: 'descubrimiento', description: 'Has encontrado un exoplaneta en la zona de habitabilidad', victoryPoints: 1 },
-  { id: 25, name: 'Anomalía Temporal', type: 'descubrimiento', description: 'Has estudiado una rara anomalía en el espacio-tiempo.', victoryPoints: 1 },
+  { id: 25, name: 'Agujero Negro Sagitario A*', type: 'descubrimiento', description: '!Has encontrado el agujero negro supermasivo que se encuentra en el centro de la via lactea!', victoryPoints: 1 },
 ];
 
 // Función para crear un mazo aleatorio de cartas

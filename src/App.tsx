@@ -293,7 +293,7 @@ function App() {
       {/* Modal para Monopolio Cósmico */}
       <MonopolySelector />
 
-      {/* Modal para Invención Galáctica */}
+      {/* Modal para Agujero Blanco */}
       <InventionSelector />
 
       {/* Tutorial inicial */}
