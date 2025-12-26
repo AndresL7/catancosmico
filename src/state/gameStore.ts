@@ -1573,7 +1573,42 @@ export const useGameStore = create<GameStore>((set, get) => ({
    * Cancela la selección de recurso para monopolio
    */
   cancelMonopolySelection: () => {
-    set({ selectingMonopolyResource: false });
+    const state = get();
+    const currentPlayer = state.players[state.currentPlayerIndex];
+    
+    // Recuperar la carta del descarte (debería ser la última agregada)
+    const cardIndex = state.discardedDiscoveryCards.map(c => c.name).lastIndexOf('Monopolio Cósmico');
+    
+    if (cardIndex !== -1) {
+      const card = state.discardedDiscoveryCards[cardIndex];
+      
+      // Remover del descarte
+      const newDiscarded = [...state.discardedDiscoveryCards];
+      newDiscarded.splice(cardIndex, 1);
+      
+      // Devolver al jugador
+      const updatedPlayers = state.players.map(p => {
+        if (p.id === currentPlayer.id) {
+          return {
+            ...p,
+            discoveryCards: [...p.discoveryCards, card]
+          };
+        }
+        return p;
+      });
+      
+      const newState = {
+        ...state,
+        selectingMonopolyResource: false,
+        discardedDiscoveryCards: newDiscarded,
+        players: updatedPlayers
+      };
+      
+      set(newState);
+      saveGameState(newState);
+    } else {
+      set({ selectingMonopolyResource: false });
+    }
   },
 
   /**
